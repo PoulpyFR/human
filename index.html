@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html ng-app="formApp">
+
+<head>
+
+	<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+	<title></title>
+	<style  type='text/css'></style>
+	<script src="https://code.jquery.com/jquery-1.10.2.js"></script>
+	<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.10/angular.js"></script>
+	<script src="https://angular-ui.github.io/bootstrap/ui-bootstrap-tpls-0.11.0.js"></script>
+	<link   href="css/main.css" rel="stylesheet" type="text/css" />
+	<link   href="http://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
+	<script src="js/app.js"></script>
+	<script src="js/api.js"></script>
+	<script src="js/structure.js"></script>
+	<script src="js/edit.js"></script>
+
+</head>
+
+<body>
+	
+<section id="mainSection" ng-controller="editController">
+	
+	<section id="editSection">
+	
+	<h1>Human</h1>
+
+	<ul>
+		<li ng-repeat="property in data" ng-if="property.visible">
+
+			<h3 ng-switch on="property.header">
+				<span ng-switch-when="true">{{property.title}}</span>
+				<span ng-switch-default><a href="http://www.wikidata.org/wiki/Property:{{property.property}}" target="_blank">{{property.title}}</a></span>
+			</h3>
+			
+			<ul>
+				<li ng-repeat="data in property.data">
+
+					<span ng-switch on="property.multiple && !data.disabled" class="separator">
+						<span ng-switch-when="true">[ <a href="" ng-click="removeLine($parent.$parent.$index, $parent.$index)">&times;</a> ]</span>
+						<span ng-switch-default>&nbsp;</span>
+					</span>
+
+					<span ng-if="property.values">
+						<ul class="inner_list">
+							<li ng-repeat="radioValue in property.values"">
+								<input type="radio" value="{{radioValue.value}}" ng-model="data.value" ng-disabled="data.disabled" ng-change="updateRadioData($parent.$parent.$parent.$index, $parent.$index, $index)">
+								<span>{{radioValue.text}}</span>
+							</li>
+							<li>
+								<input type="radio" ng-value="true" ng-model="data.other" ng-disabled="data.disabled" ng-change="updateRadioData($parent.$parent.$index, $index, {{property.values.length}})">
+								<span class="date_sublabel">Other:</span>
+
+								<span ng-if="!radioValue.value">
+									<span ng-switch on="property.type">
+
+										<!-- Entities -->
+										<span ng-switch-when="entity">
+											<input type="text" ng-model="data.othertext"
+												typeahead="label as label.display for label in suggestWikidata($viewValue, $index)"
+												typeahead-min-length="1" typeahead-on-select="onSelectLine($parent.$parent.$parent.$parent.$index, $index, $item, true)" ng-disabled="data.disabled" class="entity_radio_input" />
+										</span>
+			
+									</span>
+								</span>
+
+							</li>
+						</ul>
+						
+						
+					</span>
+
+					<span ng-if="!property.values">
+						
+						<span ng-switch on="property.type">
+						
+							<!-- Dates -->
+							<span ng-switch-when="date">
+								<ul class="inner_list">
+									<li>
+										<input type="text" ng-model="data.value"    ng-change="updateData($parent.$parent.$parent.$index, $index)" ng-disabled="data.disabled" size="20" placeholder="" />
+										<select ng-disabled="data.disabled" ng-change="updateData($parent.$parent.$parent.$index, $index)" ng-model="data.precision">
+											<option ng-repeat="precision in datePrecision" value="{{precision.value}}" ng-selected="precision.value==data.precision">{{precision.text}}</option>
+										</select>
+									</li>
+									<li><input type="checkbox" ng-model="data.circa" ng-disabled="data.disabled" ng-change="updateData($parent.$parent.$parent.$index, $index)"> circa</li>
+									<li><input type="checkbox" ng-model="data.presumably" ng-disabled="data.disabled" ng-change="updateData($parent.$parent.$parent.$index, $index)"> presumably</li>
+									<li>
+										<span class="date_sublabel">Earliest: </span>
+										<input type="text" ng-model="data.earliest" ng-change="updateData($parent.$parent.$parent.$index, $index)" ng-disabled="data.disabled">
+									</li>
+									<li>
+										<span class="date_sublabel">Latest: </span>
+										<input type="text" ng-model="data.latest" ng-change="updateData($parent.$parent.$parent.$index, $index)" ng-disabled="data.disabled">
+									</li>
+								</ul>
+							</span>
+
+							<!-- Entities -->
+							<span ng-switch-when="entity">
+								<input type="text" ng-model="data.text"
+									typeahead="label as label.display for label in suggestWikidata($viewValue, $index)"
+									typeahead-min-length="1" typeahead-on-select="onSelectLine($parent.$parent.$parent.$index, $index, $item)" ng-disabled="data.disabled" size="65" class="entity_input" />
+								<div ng-if="data.value">
+									<span class="separator"></span>
+									<span class="entity_value"><a href="https://www.wikidata.org/wiki/{{data.value}}">{{data.value}}</a></span>
+									<span class="entity_description">{{data.description}}</span>
+								</div>
+							</span>
+
+							<!-- Monolingual texts -->
+							<span ng-switch-when="monolingual text">
+								<input type="text" ng-model="data.language" ng-change="updateData($parent.$parent.$parent.$index, $index)" ng-disabled="data.disabled" placeholder="" class="monolingual_text_language" />
+								<input type="text" ng-model="data.value"    ng-change="updateData($parent.$parent.$parent.$index, $index)" ng-disabled="data.disabled" placeholder="" class="monolingual_text_value" />
+							</span>
+
+						</span>
+						
+					</span>
+
+				</li>
+			</ul>
+			
+			<div ng-if="property.multiple" class="addLink">
+				<span class="separator">&nbsp;</span>
+				<span>[ <a href="" ng-click="addLine($index)">add</a> ]</span>
+			</div>
+
+		</li>
+	</ul>
+	
+	</section>
+			
+	<section id="quickStatements">
+
+		<form target="_blank" ng-submit="submitQS()" action="http://tools.wmflabs.org/wikidata-todo/quick_statements.php" method="post">
+		  <textarea ng-model="quickStatements" rows="20" style="width:100%" readonly></textarea><br />
+		  <input type="submit" value="Copy to Quick Statements" />
+		  <input type="hidden" name="list" value="{{quickStatements}}">
+		</form>
+		
+	</section>
+	
+	<section id="initSection" data-ng-init="init()"></section>
+
+</section>
+
+<footer>
+Everything on that page is under the <a href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-Sharealike (BY-SA) license</a>. Infos, help, rants can be directly expressed to <a href="https://www.wikidata.org/wiki/User:Poulpy">Poulpy</a>.
+</footer>
+
+</body>
+
+</html>
